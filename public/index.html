@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Catur PDFK</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { display: flex; justify-content: center; align-items: center; height: 100vh; background: #2c3e50; }
+    #board { width: 90vw; max-width: 500px; aspect-ratio: 1; }
+   .square { width: 12.5%; height: 12.5%; float: left; display: flex; justify-content: center; align-items: center; font-size: 8vw; }
+   .white { background: #f0d9b5; }
+   .black { background: #b58863; }
+  </style>
+</head>
+<body>
+  <div id="board"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script>
+    const socket = io();
+    const game = new Chess();
+    const boardEl = document.getElementById('board');
+
+    function renderBoard() {
+      boardEl.innerHTML = '';
+      const fen = game.fen().split(' ')[0];
+      let row = 0, col = 0;
+      for (let i = 0; i < fen.length; i++) {
+        const char = fen[i];
+        if (char === '/') { row++; col = 0; continue; }
+        if (!isNaN(char)) { col += parseInt(char); continue; }
+        const square = document.createElement('div');
+        square.className = 'square ' + ((row + col) % 2 === 0? 'white' : 'black');
+        square.innerText = char;
+        boardEl.appendChild(square);
+        col++;
+      }
+    }
+
+    socket.on('init', (fen) => { game.load(fen); renderBoard(); });
+    socket.on('move', (fen) => { game.load(fen); renderBoard(); });
+  </script>
+</body>
+  </html>
