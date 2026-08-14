@@ -1,43 +1,325 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <title>Catur PDFK</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { display: flex; justify-content: center; align-items: center; height: 100vh; background: #2c3e50; }
-    #board { width: 90vw; max-width: 500px; aspect-ratio: 1; }
-   .square { width: 12.5%; height: 12.5%; float: left; display: flex; justify-content: center; align-items: center; font-size: 8vw; }
-   .white { background: #f0d9b5; }
-   .black { background: #b58863; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Papan Kantor — Catur Internal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+:root{
+  --bg:#132019;
+  --bg2:#0d1712;
+  --panel:#1c2b22;
+  --panel-2:#213426;
+  --line: rgba(233,218,181,0.14);
+  --wood-light:#e9dab5;
+  --wood-dark:#7a5535;
+  --brass:#c7a244;
+  --brass-bright:#e4c567;
+  --ivory:#f3ecdd;
+  --ivory-dim: rgba(243,236,221,0.62);
+  --ink:#1b140c;
+  --alert:#c15c50;
+  --good:#5fa06d;
+  --radius:10px;
+  --shadow: 0 12px 30px rgba(0,0,0,0.35);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background: radial-gradient(ellipse at top, #1a2a20 0%, var(--bg) 55%, var(--bg2) 100%);
+  color:var(--ivory);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Fraunces',serif; margin:0 0 6px 0; font-weight:600;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+button{font-family:inherit; cursor:pointer;}
+input{font-family:inherit;}
+::selection{background:var(--brass); color:var(--ink);}
+:focus-visible{outline:2px solid var(--brass-bright); outline-offset:2px;}
+
+#app{max-width:1080px; margin:0 auto; padding:0 16px 60px;}
+
+#topbar{display:flex; align-items:center; justify-content:space-between; padding:16px 4px; border-bottom:1px solid var(--line); margin-bottom:22px;}
+#topbar.hidden{display:none;}
+.brand{display:flex; align-items:center; gap:10px; font-family:'Fraunces',serif; font-size:20px; font-weight:600;}
+.brand .glyph{color:var(--brass-bright); font-size:24px;}
+.userchip{display:flex; align-items:center; gap:10px; font-size:14px; color:var(--ivory-dim);}
+.userchip b{color:var(--ivory); font-weight:600;}
+.pill{background:var(--panel-2); border:1px solid var(--line); border-radius:999px; padding:4px 12px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--brass-bright);}
+
+.screen{display:none;}
+.screen.active{display:block; animation:fadeIn .25s ease;}
+@media (prefers-reduced-motion: reduce){ .screen.active{animation:none;} }
+@keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+
+#screen-auth, #screen-registered{min-height:80vh; display:flex; align-items:center; justify-content:center;}
+.auth-card{width:100%; max-width:420px; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:34px 30px; box-shadow:var(--shadow); text-align:center;}
+.auth-emblem{font-size:40px; color:var(--brass-bright); margin-bottom:6px;}
+.auth-card h1{font-size:26px;}
+.tagline{color:var(--ivory-dim); font-size:13.5px; line-height:1.5; margin:8px 0 20px;}
+.tabs{display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-bottom:18px;}
+.tab{flex:1; padding:10px; background:transparent; border:none; color:var(--ivory-dim); font-size:14px; font-weight:600;}
+.tab.active{background:var(--panel-2); color:var(--brass-bright);}
+.tabpanel{text-align:left;}
+.tabpanel.hidden{display:none;}
+.tabpanel label{display:block; font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ivory-dim); margin:14px 0 6px;}
+.tabpanel input{width:100%; padding:11px 12px; border-radius:8px; border:1px solid var(--line); background:var(--bg2); color:var(--ivory); font-size:15px;}
+.tabpanel input:focus{border-color:var(--brass);}
+.btn-brass{width:100%; margin-top:18px; padding:12px; border:none; border-radius:8px; background:linear-gradient(180deg, var(--brass-bright), var(--brass)); color:var(--ink); font-weight:700; font-size:14.5px;}
+.btn-brass:hover{filter:brightness(1.06);}
+.btn-brass:disabled{opacity:0.5; cursor:not-allowed;}
+.btn-ghost{width:100%; margin-top:10px; padding:11px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--ivory-dim); font-weight:600; font-size:14px;}
+.btn-ghost:hover{border-color:var(--brass); color:var(--ivory);}
+.note{font-size:11.5px; color:var(--ivory-dim); margin-top:14px; line-height:1.5;}
+.err{color:var(--alert); font-size:12.5px; margin-top:8px; min-height:16px;}
+
+.storage-warning{background:rgba(193,92,80,0.15); border:1px solid var(--alert); color:var(--ivory); padding:12px 16px; border-radius:8px; font-size:13px; line-height:1.5; margin:16px 0; text-align:center;}
+.storage-warning.hidden{display:none;}
+
+.dash-grid{display:grid; grid-template-columns:1fr; gap:18px;}
+@media(min-width:760px){ .dash-grid{grid-template-columns:280px 1fr;} }
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:18px;}
+.panel h2{font-size:15px; text-transform:uppercase; letter-spacing:0.06em; color:var(--brass-bright); margin-bottom:14px;}
+
+.pegboard{background: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(233,218,181,0.05) 28px), linear-gradient(180deg, #6b4a2c, #5c3f26); border:1px solid rgba(0,0,0,0.35); border-radius:8px; padding:14px 10px; min-height:120px;}
+.tag{display:flex; align-items:center; gap:8px; background:var(--wood-light); color:var(--ink); border-radius:4px; padding:7px 9px; margin-bottom:8px; font-size:13px; font-weight:600; transform:rotate(-0.6deg); box-shadow:0 3px 6px rgba(0,0,0,0.25);}
+.tag:nth-child(even){transform:rotate(0.6deg);}
+.tag .pin{width:6px; height:6px; border-radius:50%; background:var(--brass);}
+.tag .dot{width:7px; height:7px; border-radius:50%; background:var(--good); margin-left:auto; flex:none;}
+.empty-note{color:var(--ivory-dim); font-size:13px; padding:6px 2px;}
+
+table.board-table{width:100%; border-collapse:collapse; font-size:13.5px;}
+table.board-table th{text-align:left; color:var(--ivory-dim); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; padding:6px 8px; border-bottom:1px solid var(--line);}
+table.board-table td{padding:8px; border-bottom:1px solid rgba(255,255,255,0.04); font-family:'IBM Plex Mono',monospace;}
+table.board-table td.name{font-family:'Inter',sans-serif; font-weight:600;}
+.rank-1{color:var(--brass-bright);}
+
+.menu-row{display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;}
+.menu-row .btn-brass, .menu-row .btn-ghost{width:auto; flex:1; min-width:120px; margin-top:0;}
+
+.setup-card{max-width:520px; margin:0 auto;}
+.opt-group{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;}
+.opt-btn{padding:10px 16px; border-radius:8px; border:1px solid var(--line); background:var(--bg2); color:var(--ivory-dim); font-weight:600; font-size:13.5px;}
+.opt-btn.selected{border-color:var(--brass); color:var(--brass-bright); background:rgba(199,162,68,0.1);}
+.opponent-list{max-height:220px; overflow-y:auto; margin-bottom:16px;}
+.opp-row{display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid var(--line); border-radius:8px; margin-bottom:8px; background:var(--bg2);}
+.opp-row button{padding:6px 12px; font-size:12.5px; border-radius:6px; border:1px solid var(--brass); background:transparent; color:var(--brass-bright); font-weight:700;}
+.status-line{text-align:center; color:var(--ivory-dim); font-size:13.5px; padding:16px 0;}
+.spinner{width:16px; height:16px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--brass-bright); display:inline-block; animation:spin 0.8s linear infinite; vertical-align:middle; margin-right:8px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@media (prefers-reduced-motion: reduce){ .spinner{animation:none;} }
+
+.game-wrap{display:flex; flex-direction:column; align-items:center; gap:14px;}
+.clocks{display:flex; gap:14px; width:100%; max-width:420px;}
+.clock{flex:1; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px 14px; text-align:center;}
+.clock.active{border-color:var(--brass); box-shadow:0 0 0 1px var(--brass) inset;}
+.clock .who{font-size:11px; color:var(--ivory-dim); text-transform:uppercase; letter-spacing:0.05em;}
+.clock .time{font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600;}
+.clock.low .time{color:var(--alert);}
+
+#board{display:grid; grid-template-columns:repeat(8,1fr); width:min(92vw,420px); height:min(92vw,420px); border:3px solid var(--brass); border-radius:4px; overflow:hidden; box-shadow:var(--shadow);}
+.sq{display:flex; align-items:center; justify-content:center; font-size:min(7.5vw,32px); position:relative; user-select:none;}
+.sq.light{background:var(--wood-light);}
+.sq.dark{background:var(--wood-dark);}
+.sq.selected{outline:3px solid var(--brass-bright); outline-offset:-3px;}
+.sq.movable::after{content:''; position:absolute; width:26%; height:26%; border-radius:50%; background:rgba(199,162,68,0.55);}
+.sq.movable.occupied::after{width:80%; height:80%; border-radius:50%; background:transparent; border:4px solid rgba(199,162,68,0.6);}
+.piece-w{color:#fbf6e9; text-shadow:0 1px 2px rgba(0,0,0,0.6);}
+.piece-b{color:#241a10; text-shadow:0 1px 1px rgba(255,255,255,0.15);}
+.game-meta{width:100%; max-width:420px; display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--ivory-dim);}
+.game-actions{display:flex; gap:10px; width:100%; max-width:420px;}
+
+.chat-panel{width:100%; max-width:420px; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:12px; display:flex; flex-direction:column; gap:8px;}
+.chat-header{font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--brass-bright); font-weight:600;}
+.chat-messages{height:150px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:2px;}
+.chat-msg{display:flex; flex-direction:column; max-width:82%;}
+.chat-msg.mine{align-self:flex-end; align-items:flex-end;}
+.chat-msg.theirs{align-self:flex-start; align-items:flex-start;}
+.chat-name{font-size:10.5px; color:var(--ivory-dim); margin-bottom:2px; font-family:'IBM Plex Mono',monospace;}
+.chat-bubble{padding:7px 11px; border-radius:10px; font-size:13px; line-height:1.35; word-break:break-word;}
+.chat-msg.mine .chat-bubble{background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:var(--ink); border-bottom-right-radius:3px;}
+.chat-msg.theirs .chat-bubble{background:var(--wood-light); color:var(--ink); border-bottom-left-radius:3px;}
+.chat-quick{display:flex; gap:6px; flex-wrap:wrap;}
+.chat-quick button{padding:5px 10px; border-radius:999px; border:1px solid var(--line); background:var(--bg2); color:var(--ivory-dim); font-size:12px; font-weight:600;}
+.chat-quick button:hover{border-color:var(--brass); color:var(--brass-bright);}
+.chat-input-row{display:flex; gap:8px;}
+.chat-input-row input{flex:1; padding:9px 11px; border-radius:8px; border:1px solid var(--line); background:var(--bg2); color:var(--ivory); font-size:13px;}
+.chat-input-row button{padding:9px 16px; border-radius:8px; border:none; background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:var(--ink); font-weight:700; font-size:13px;}
+
+.settings-card{max-width:420px; margin:0 auto;}
+.setting-row{display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--line);}
+.setting-row:last-child{border-bottom:none;}
+.setting-row .label{font-weight:600; font-size:14px;}
+.switch{width:44px; height:24px; border-radius:999px; background:var(--bg2); border:1px solid var(--line); position:relative; flex:none;}
+.switch.on{background:var(--brass); border-color:var(--brass);}
+.switch .knob{position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--ivory); transition:left .15s;}
+.switch.on .knob{left:22px; background:var(--ink);}
+input[type=range]{width:150px; accent-color:var(--brass);}
+
+.toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--panel-2); border:1px solid var(--brass); color:var(--ivory); padding:10px 18px; border-radius:8px; font-size:13.5px; box-shadow:var(--shadow); z-index:60;}
+.toast.hidden{display:none;}
+.modal-overlay{position:fixed; inset:0; background:rgba(6,10,7,0.72); display:flex; align-items:center; justify-content:center; z-index:70; padding:16px;}
+.modal-overlay.hidden{display:none;}
+.modal-card{background:var(--panel); border:1px solid var(--brass); border-radius:var(--radius); padding:26px; max-width:360px; width:100%; text-align:center; box-shadow:var(--shadow);}
+.modal-actions{display:flex; gap:10px; margin-top:16px;}
+.modal-actions button{flex:1; padding:11px; border-radius:8px; font-weight:700; font-size:13.5px;}
+#btn-challenge-accept, #btn-gameover-again{border:none; background:linear-gradient(180deg,var(--brass-bright),var(--brass)); color:var(--ink);}
+#btn-challenge-reject, #btn-gameover-dashboard{border:1px solid var(--line); background:transparent; color:var(--ivory-dim);}
+.back-link{background:none; border:none; color:var(--ivory-dim); font-size:13px; margin-bottom:14px; padding:0;}
+.back-link:hover{color:var(--brass-bright);}
+</style>
 </head>
 <body>
-  <div id="board"></div>
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-  <script>
-    const socket = io();
-    const game = new Chess();
-    const boardEl = document.getElementById('board');
+<div id="app">
+  <div id="storage-warning" class="storage-warning hidden">⚠️ Tidak bisa terhubung ke server. Pastikan server backend (Node.js) sedang berjalan.</div>
 
-    function renderBoard() {
-      boardEl.innerHTML = '';
-      const fen = game.fen().split(' ')[0];
-      let row = 0, col = 0;
-      for (let i = 0; i < fen.length; i++) {
-        const char = fen[i];
-        if (char === '/') { row++; col = 0; continue; }
-        if (!isNaN(char)) { col += parseInt(char); continue; }
-        const square = document.createElement('div');
-        square.className = 'square ' + ((row + col) % 2 === 0? 'white' : 'black');
-        square.innerText = char;
-        boardEl.appendChild(square);
-        col++;
-      }
-    }
+  <header id="topbar" class="hidden">
+    <div class="brand"><span class="glyph">♞</span><span>Papan Kantor</span></div>
+    <div class="userchip"><b id="chip-name"></b><span class="pill" id="chip-points"></span></div>
+  </header>
 
-    socket.on('init', (fen) => { game.load(fen); renderBoard(); });
-    socket.on('move', (fen) => { game.load(fen); renderBoard(); });
-  </script>
-</body>
-  </html>
+  <main id="main">
+
+    <section id="screen-auth" class="screen active">
+      <div class="auth-card">
+        <div class="auth-emblem">♞</div>
+        <h1>Catur Online</h1>
+        <p class="tagline">Game Catur Online buatan santri PDFK Banyumas. Daftar, tunggu token dari admin lewat WhatsApp, lalu tantang siapa saja yang online.</p>
+        <div class="tabs">
+          <button class="tab active" data-tab="daftar">Daftar</button>
+          <button class="tab" data-tab="masuk">Masuk</button>
+        </div>
+        <div class="tabpanel" id="tab-daftar">
+          <label for="reg-name">Nama</label>
+          <input id="reg-name" type="text" placeholder="Nama lengkap" maxlength="40">
+          <label for="reg-phone">Nomor WhatsApp</label>
+          <input id="reg-phone" type="tel" placeholder="08xxxxxxxxxx" maxlength="20">
+          <button class="btn-brass" id="btn-register">Daftar</button>
+          <div class="err" id="reg-err"></div>
+          <p class="note">Setelah daftar, admin akan mengirim token login ke WhatsApp kamu secara manual.</p>
+        </div>
+        <div class="tabpanel hidden" id="tab-masuk">
+          <label for="login-token">Token</label>
+          <input id="login-token" type="text" placeholder="mis. K7X9QA" maxlength="8" style="text-transform:uppercase">
+          <button class="btn-brass" id="btn-login">Masuk</button>
+          <div class="err" id="login-err"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-registered" class="screen">
+      <div class="auth-card">
+        <div class="auth-emblem">✓</div>
+        <h1>Registrasi Diterima</h1>
+        <p class="tagline">Terima kasih, <b id="registered-name" style="color:var(--ivory)"></b>. Admin akan mengirim token login lewat WhatsApp dalam waktu dekat. Setelah dapat, masuk lewat tab "Masuk".</p>
+        <button class="btn-brass" id="btn-back-to-login">Ke Halaman Masuk</button>
+      </div>
+    </section>
+
+    <section id="screen-dashboard" class="screen">
+      <div class="dash-grid">
+        <div>
+          <div class="panel" style="margin-bottom:16px;">
+            <h2>Sedang Online</h2>
+            <div class="pegboard" id="online-list"></div>
+          </div>
+        </div>
+        <div>
+          <div class="panel">
+            <h2>Papan Peringkat</h2>
+            <table class="board-table">
+              <thead><tr><th>#</th><th>Nama</th><th>Menang</th><th>Poin</th></tr></thead>
+              <tbody id="leaderboard-body"></tbody>
+            </table>
+          </div>
+          <div class="menu-row">
+            <button class="btn-brass" id="btn-menu-play">♟ Main</button>
+            <button class="btn-ghost" id="btn-menu-settings">Pengaturan</button>
+            <button class="btn-ghost" id="btn-menu-exit">Keluar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-play-setup" class="screen">
+      <div class="setup-card">
+        <button class="back-link" id="back-from-setup">‹ Kembali</button>
+        <div class="panel">
+          <h2>Waktu Main</h2>
+          <div class="opt-group" id="time-options">
+            <button class="opt-btn" data-min="3">3 menit</button>
+            <button class="opt-btn selected" data-min="5">5 menit</button>
+            <button class="opt-btn" data-min="10">10 menit</button>
+            <button class="opt-btn" data-min="15">15 menit</button>
+          </div>
+          <h2>Lawan</h2>
+          <div class="opt-group" id="opp-mode-options">
+            <button class="opt-btn" data-mode="manual">Pilih Sendiri</button>
+            <button class="opt-btn selected" data-mode="random">Acak Server</button>
+          </div>
+          <div id="manual-picker" style="display:none;">
+            <div class="opponent-list" id="opponent-list"></div>
+          </div>
+          <div id="search-status" style="display:none;" class="status-line"><span class="spinner"></span><span id="search-status-text">Mencari lawan...</span></div>
+          <button class="btn-brass" id="btn-start-search">Cari Lawan</button>
+          <button class="btn-ghost hidden" id="btn-cancel-search">Batalkan</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-game" class="screen">
+      <div class="game-wrap">
+        <div class="game-meta">
+          <span id="game-opponent-name">vs —</span>
+          <span id="game-status-text" class="mono"></span>
+        </div>
+        <div class="clocks">
+          <div class="clock" id="clock-top"><div class="who" id="clock-top-label">Lawan</div><div class="time mono" id="clock-top-time">05:00</div></div>
+          <div class="clock" id="clock-bottom"><div class="who" id="clock-bottom-label">Kamu</div><div class="time mono" id="clock-bottom-time">05:00</div></div>
+        </div>
+        <div id="board"></div>
+        <div class="game-actions">
+          <button class="btn-ghost" id="btn-resign">Menyerah</button>
+        </div>
+        <div class="chat-panel">
+          <div class="chat-header">Obrolan Pertandingan</div>
+          <div class="chat-messages" id="chat-messages"></div>
+          <div class="chat-quick">
+            <button data-text="Semangat! 💪">Semangat!</button>
+            <button data-text="Jago juga nih 👏">Jago!</button>
+            <button data-text="Sabar, mikir dulu 🤔">Mikir dulu</button>
+            <button data-text="GG!">GG</button>
+          </div>
+          <div class="chat-input-row">
+            <input id="chat-input" type="text" maxlength="140" placeholder="Semangatin lawan...">
+            <button id="chat-send-btn">Kirim</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-settings" class="screen">
+      <div class="settings-card">
+        <button class="back-link" id="back-from-settings">‹ Kembali</button>
+        <div class="panel">
+          <h2>Pengaturan</h2>
+          <div class="setting-row"><span class="label">Musik</span><div class="switch" id="switch-music"><div class="knob"></div></div></div>
+          <div class="setting-row"><span class="label">Efek Suara</span><div class="switch" id="switch-sound"><div class="knob"></div></div></div>
+          <div class="setting-row"><span class="label">Volume</span><input type="range" id="range-volume" min="0" max="100" value="50"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+
+<div class="modal-overlay hidden" id="challenge-modal">
+  <div class="modal-card">
+    <h3>Tantangan Masuk</h3>
+    <p><b id="challenge-from"></b> menantang kamu main ca
